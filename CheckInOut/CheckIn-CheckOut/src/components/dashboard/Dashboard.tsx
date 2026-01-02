@@ -1,14 +1,21 @@
 import React, { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   makeStyles,
   tokens,
+  Button,
+  Card,
+  Text,
 } from '@fluentui/react-components';
-import { Employee } from '@/types';
+import { 
+  ArrowRightRegular,
+  HistoryRegular,
+} from '@fluentui/react-icons';
 import { Header, LoadingSpinner, ErrorMessage } from '@/components/common';
 import { CurrentStatus } from '@/components/checkin';
 import { HistoryList } from '@/components/history';
 import QuickActions from './QuickActions';
-import TimeSummary from './TimeSummary';
+import EnhancedTimeSummary from './EnhancedTimeSummary';
 import {
   useEmployee,
   useLocations,
@@ -47,10 +54,27 @@ const useStyles = makeStyles({
   section: {
     marginTop: tokens.spacingVerticalL,
   },
+  sectionHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: tokens.spacingVerticalS,
+  },
+  sectionTitle: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: tokens.spacingHorizontalS,
+    fontSize: tokens.fontSizeBase500,
+    fontWeight: tokens.fontWeightSemibold,
+  },
+  historyCard: {
+    padding: tokens.spacingVerticalM,
+  },
 });
 
 const Dashboard: React.FC = () => {
   const styles = useStyles();
+  const navigate = useNavigate();
 
   // Fetch employee data
   const { employee, loading: employeeLoading, error: employeeError } = useEmployee();
@@ -138,20 +162,38 @@ const Dashboard: React.FC = () => {
 
             {/* Recent History */}
             <div className={styles.section}>
-              <HistoryList
-                records={records.slice(0, 5)}
-                locations={locations}
-                loading={historyLoading}
-              />
+              <div className={styles.sectionHeader}>
+                <Text className={styles.sectionTitle}>
+                  <HistoryRegular />
+                  Recent Activity
+                </Text>
+                <Button
+                  appearance="subtle"
+                  icon={<ArrowRightRegular />}
+                  iconPosition="after"
+                  onClick={() => navigate('/history')}
+                >
+                  View All
+                </Button>
+              </div>
+              <Card className={styles.historyCard}>
+                <HistoryList
+                  records={records.slice(0, 5)}
+                  locations={locations}
+                  loading={historyLoading}
+                  showHeader={false}
+                />
+              </Card>
             </div>
           </div>
 
           <div className={styles.sideColumn}>
             {/* Time Summary */}
-            <TimeSummary
+            <EnhancedTimeSummary
               summary={summary}
               loading={summaryLoading}
               title="This Week"
+              showChart={true}
             />
           </div>
         </div>

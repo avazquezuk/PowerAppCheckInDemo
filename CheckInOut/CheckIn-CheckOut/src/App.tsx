@@ -1,5 +1,7 @@
 import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Dashboard } from './components';
+import { HistoryPage } from './components/history';
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -32,7 +34,12 @@ class ErrorBoundary extends React.Component<
 function App() {
   return (
     <ErrorBoundary>
-      <Dashboard />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/history" element={<HistoryPage />} />
+        </Routes>
+      </BrowserRouter>
     </ErrorBoundary>
   );
 }

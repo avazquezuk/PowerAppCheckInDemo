@@ -3,8 +3,10 @@ import {
   makeStyles,
   tokens,
   Text,
+  Button,
+  Badge,
 } from '@fluentui/react-components';
-import { HistoryRegular } from '@fluentui/react-icons';
+import { HistoryRegular, ChevronDownRegular } from '@fluentui/react-icons';
 import { CheckInOutRecord, Location } from '@/types';
 import HistoryItem from './HistoryItem';
 import { LoadingSpinner } from '@/components/common';
@@ -25,6 +27,9 @@ const useStyles = makeStyles({
     fontSize: tokens.fontSizeBase500,
     fontWeight: tokens.fontWeightSemibold,
   },
+  count: {
+    marginLeft: 'auto',
+  },
   emptyState: {
     display: 'flex',
     flexDirection: 'column',
@@ -39,6 +44,17 @@ const useStyles = makeStyles({
     marginBottom: tokens.spacingVerticalM,
     opacity: 0.5,
   },
+  loadMoreContainer: {
+    display: 'flex',
+    justifyContent: 'center',
+    marginTop: tokens.spacingVerticalM,
+  },
+  paginationInfo: {
+    textAlign: 'center',
+    color: tokens.colorNeutralForeground3,
+    fontSize: tokens.fontSizeBase200,
+    marginTop: tokens.spacingVerticalS,
+  },
 });
 
 interface HistoryListProps {
@@ -46,6 +62,11 @@ interface HistoryListProps {
   locations: Location[];
   loading?: boolean;
   showHeader?: boolean;
+  // Pagination props
+  totalCount?: number;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
+  loadingMore?: boolean;
 }
 
 const HistoryList: React.FC<HistoryListProps> = ({
@@ -53,6 +74,10 @@ const HistoryList: React.FC<HistoryListProps> = ({
   locations,
   loading = false,
   showHeader = true,
+  totalCount,
+  hasMore = false,
+  onLoadMore,
+  loadingMore = false,
 }) => {
   const styles = useStyles();
 
@@ -69,6 +94,11 @@ const HistoryList: React.FC<HistoryListProps> = ({
         <div className={styles.header}>
           <HistoryRegular />
           <Text className={styles.title}>Recent Activity</Text>
+          {totalCount !== undefined && totalCount > 0 && (
+            <Badge className={styles.count} appearance="filled" color="informative">
+              {totalCount} records
+            </Badge>
+          )}
         </div>
       )}
 
@@ -79,13 +109,34 @@ const HistoryList: React.FC<HistoryListProps> = ({
           <Text>Your activity will appear here after you check in.</Text>
         </div>
       ) : (
-        records.map(record => (
-          <HistoryItem
-            key={record.id}
-            record={record}
-            location={getLocation(record.locationId)}
-          />
-        ))
+        <>
+          {records.map(record => (
+            <HistoryItem
+              key={record.id}
+              record={record}
+              location={getLocation(record.locationId)}
+            />
+          ))}
+          
+          {hasMore && onLoadMore && (
+            <div className={styles.loadMoreContainer}>
+              <Button
+                appearance="subtle"
+                icon={<ChevronDownRegular />}
+                onClick={onLoadMore}
+                disabled={loadingMore}
+              >
+                {loadingMore ? 'Loading...' : 'Load More'}
+              </Button>
+            </div>
+          )}
+          
+          {totalCount !== undefined && (
+            <Text className={styles.paginationInfo}>
+              Showing {records.length} of {totalCount} records
+            </Text>
+          )}
+        </>
       )}
     </div>
   );
