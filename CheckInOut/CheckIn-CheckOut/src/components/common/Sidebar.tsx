@@ -4,6 +4,9 @@ import {
   makeStyles,
   tokens,
   Text,
+  Button,
+  Tooltip,
+  mergeClasses,
 } from '@fluentui/react-components';
 import {
   HomeRegular,
@@ -12,6 +15,8 @@ import {
   ClockFilled,
   HistoryRegular,
   HistoryFilled,
+  PanelLeftContractRegular,
+  PanelLeftExpandRegular,
 } from '@fluentui/react-icons';
 
 const useStyles = makeStyles({
@@ -23,15 +28,32 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     padding: tokens.spacingVerticalM,
+    transition: 'width 0.2s ease',
+  },
+  sidebarCollapsed: {
+    width: '64px',
   },
   logo: {
     padding: `${tokens.spacingVerticalM} ${tokens.spacingHorizontalM}`,
     marginBottom: tokens.spacingVerticalM,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: '40px',
   },
   logoText: {
     fontSize: tokens.fontSizeBase500,
     fontWeight: tokens.fontWeightBold,
     color: tokens.colorBrandForeground1,
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+  },
+  logoTextHidden: {
+    display: 'none',
+  },
+  collapseButton: {
+    minWidth: 'auto',
+    padding: tokens.spacingHorizontalXS,
   },
   menuList: {
     display: 'flex',
@@ -72,10 +94,19 @@ const useStyles = makeStyles({
   menuItemText: {
     fontSize: tokens.fontSizeBase300,
     color: tokens.colorNeutralForeground1,
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+  },
+  menuItemTextHidden: {
+    display: 'none',
   },
   menuItemTextActive: {
     fontWeight: tokens.fontWeightSemibold,
     color: tokens.colorBrandForeground1,
+  },
+  menuItemCollapsed: {
+    justifyContent: 'center',
+    padding: tokens.spacingVerticalS,
   },
 });
 
@@ -111,7 +142,12 @@ const menuItems: MenuItem[] = [
   },
 ];
 
-const Sidebar: React.FC = () => {
+interface SidebarProps {
+  collapsed: boolean;
+  onToggleCollapse: () => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggleCollapse }) => {
   const styles = useStyles();
   const navigate = useNavigate();
   const location = useLocation();
@@ -123,28 +159,57 @@ const Sidebar: React.FC = () => {
   };
 
   return (
-    <aside className={styles.sidebar}>
+    <aside className={mergeClasses(styles.sidebar, collapsed && styles.sidebarCollapsed)}>
       <div className={styles.logo}>
-        <Text className={styles.logoText}>Check In/Out</Text>
+        {!collapsed && <Text className={styles.logoText}>Check In/Out</Text>}
+        <Tooltip
+          content={collapsed ? 'Expand menu' : 'Collapse menu'}
+          relationship="label"
+          positioning="after"
+        >
+          <Button
+            appearance="subtle"
+            className={styles.collapseButton}
+            icon={collapsed ? <PanelLeftExpandRegular /> : <PanelLeftContractRegular />}
+            onClick={onToggleCollapse}
+            aria-label={collapsed ? 'Expand menu' : 'Collapse menu'}
+          />
+        </Tooltip>
       </div>
 
       <nav className={styles.menuList}>
         {menuItems.map(item => {
           const active = isActive(item);
-          return (
+          const button = (
             <button
               key={item.id}
-              className={`${styles.menuItem} ${active ? styles.menuItemActive : ''}`}
+              className={mergeClasses(
+                styles.menuItem,
+                active && styles.menuItemActive,
+                collapsed && styles.menuItemCollapsed
+              )}
               onClick={() => handleClick(item)}
             >
-              <span className={`${styles.menuItemIcon} ${active ? styles.menuItemIconActive : ''}`}>
+              <span className={mergeClasses(styles.menuItemIcon, active && styles.menuItemIconActive)}>
                 {active ? item.iconActive : item.icon}
               </span>
-              <Text className={`${styles.menuItemText} ${active ? styles.menuItemTextActive : ''}`}>
-                {item.label}
-              </Text>
+              {!collapsed && (
+                <Text className={mergeClasses(styles.menuItemText, active && styles.menuItemTextActive)}>
+                  {item.label}
+                </Text>
+              )}
             </button>
           );
+
+          if (collapsed) {
+            return (
+              <Tooltip key={item.id} content={item.label} relationship="label" positioning="after">
+                {button}
+              </Tooltip>
+            );
+          }
+
+          return button;
         })}
       </nav>
     </aside>

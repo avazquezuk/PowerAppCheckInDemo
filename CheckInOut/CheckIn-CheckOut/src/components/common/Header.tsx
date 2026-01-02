@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   makeStyles,
   tokens,
@@ -8,14 +9,28 @@ import {
   Tooltip,
 } from '@fluentui/react-components';
 import {
-  PersonRegular,
-  SignOutRegular,
   WeatherSunnyRegular,
   WeatherMoonRegular,
+  HomeRegular,
+  ClockRegular,
+  HistoryRegular,
 } from '@fluentui/react-icons';
 import { Employee } from '@/types';
 import { getInitials } from '@/utils';
 import { useTheme } from '@/context';
+
+const getPageInfo = (pathname: string): { name: string; icon: React.ReactNode } => {
+  switch (pathname) {
+    case '/':
+      return { name: 'Dashboard', icon: <HomeRegular /> };
+    case '/recent':
+      return { name: 'Recent Activity', icon: <ClockRegular /> };
+    case '/history':
+      return { name: 'History', icon: <HistoryRegular /> };
+    default:
+      return { name: 'Dashboard', icon: <HomeRegular /> };
+  }
+};
 
 const useStyles = makeStyles({
   header: {
@@ -36,6 +51,10 @@ const useStyles = makeStyles({
     fontSize: tokens.fontSizeBase500,
     fontWeight: tokens.fontWeightSemibold,
     color: tokens.colorNeutralForegroundOnBrand,
+  },
+  pageIcon: {
+    display: 'flex',
+    alignItems: 'center',
   },
   rightSection: {
     display: 'flex',
@@ -72,12 +91,14 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ employee }) => {
   const styles = useStyles();
   const { isDark, toggleTheme } = useTheme();
+  const location = useLocation();
+  const pageInfo = getPageInfo(location.pathname);
 
   return (
     <header className={styles.header}>
       <div className={styles.titleSection}>
-        <SignOutRegular fontSize={24} />
-        <Text className={styles.title}>Check In / Check Out</Text>
+        <span className={styles.pageIcon}>{pageInfo.icon}</span>
+        <Text className={styles.title}>{pageInfo.name}</Text>
       </div>
       
       <div className={styles.rightSection}>

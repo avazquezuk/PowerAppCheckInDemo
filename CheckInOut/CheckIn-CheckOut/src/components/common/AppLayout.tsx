@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   makeStyles,
   tokens,
@@ -6,6 +6,8 @@ import {
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { Employee } from '@/types';
+
+const SIDEBAR_COLLAPSED_KEY = 'sidebar-collapsed';
 
 const useStyles = makeStyles({
   layout: {
@@ -31,10 +33,22 @@ interface AppLayoutProps {
 
 const AppLayout: React.FC<AppLayoutProps> = ({ children, employee }) => {
   const styles = useStyles();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
+    return saved === 'true';
+  });
+
+  const handleToggleCollapse = useCallback(() => {
+    setSidebarCollapsed(prev => {
+      const newValue = !prev;
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(newValue));
+      return newValue;
+    });
+  }, []);
 
   return (
     <div className={styles.layout}>
-      <Sidebar />
+      <Sidebar collapsed={sidebarCollapsed} onToggleCollapse={handleToggleCollapse} />
       <div className={styles.mainArea}>
         <Header employee={employee} />
         <main className={styles.content}>
