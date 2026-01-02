@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Dashboard } from './components';
 import { HistoryPage, RecentActivityPage } from './components/history';
+import { ServiceProvider } from './context';
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -34,13 +35,15 @@ class ErrorBoundary extends React.Component<
 function App() {
   return (
     <ErrorBoundary>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/recent" element={<RecentActivityPage />} />
-          <Route path="/history" element={<HistoryPage />} />
-        </Routes>
-      </BrowserRouter>
+      <ServiceProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/recent" element={<RecentActivityPage />} />
+            <Route path="/history" element={<HistoryPage />} />
+          </Routes>
+        </BrowserRouter>
+      </ServiceProvider>
     </ErrorBoundary>
   );
 }
