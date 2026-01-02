@@ -11,7 +11,6 @@ import {
   FilterRegular,
   ArrowDownloadRegular,
 } from '@fluentui/react-icons';
-import { HistoryFilters } from '@/types';
 import { AppLayout, LoadingSpinner } from '@/components/common';
 import { HistoryList, DateRangePicker, LocationFilter } from '@/components/history';
 import { EnhancedTimeSummary } from '@/components/dashboard';
