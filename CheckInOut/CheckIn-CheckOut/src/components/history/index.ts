@@ -4,3 +4,4 @@ export { default as DateFilter } from './DateFilter';
 export { default as DateRangePicker } from './DateRangePicker';
 export { default as LocationFilter } from './LocationFilter';
 export { default as HistoryPage } from './HistoryPage';
+export { default as RecentActivityPage } from './RecentActivityPage';

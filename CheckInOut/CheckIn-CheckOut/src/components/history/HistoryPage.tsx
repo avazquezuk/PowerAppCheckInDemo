@@ -5,16 +5,14 @@ import {
   Card,
   Text,
   Button,
-  Divider,
 } from '@fluentui/react-components';
 import { 
   HistoryRegular, 
-  ArrowLeftRegular,
   FilterRegular,
   ArrowDownloadRegular,
 } from '@fluentui/react-icons';
 import { HistoryFilters } from '@/types';
-import { Header, LoadingSpinner } from '@/components/common';
+import { AppLayout, LoadingSpinner } from '@/components/common';
 import { HistoryList, DateRangePicker, LocationFilter } from '@/components/history';
 import { EnhancedTimeSummary } from '@/components/dashboard';
 import {
@@ -25,10 +23,6 @@ import {
 } from '@/hooks';
 
 const useStyles = makeStyles({
-  container: {
-    minHeight: '100vh',
-    backgroundColor: tokens.colorNeutralBackground2,
-  },
   content: {
     maxWidth: '1000px',
     margin: '0 auto',
@@ -41,6 +35,9 @@ const useStyles = makeStyles({
     marginBottom: tokens.spacingVerticalL,
   },
   pageTitle: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: tokens.spacingHorizontalS,
     fontSize: tokens.fontSizeBase600,
     fontWeight: tokens.fontWeightSemibold,
     flex: 1,
@@ -134,7 +131,8 @@ const HistoryPage: React.FC = () => {
   const { summary, loading: summaryLoading } = useTimeSummary(
     employee?.id || null,
     summaryStartDate,
-    summaryEndDate
+    summaryEndDate,
+    filters.locationId
   );
 
   // Pagination
@@ -196,31 +194,56 @@ const HistoryPage: React.FC = () => {
   const hasActiveFilters = filters.startDate || filters.endDate || filters.locationId;
   const isLoading = employeeLoading || locationsLoading;
 
+  // Generate summary title based on active filters
+  const summaryTitle = useMemo(() => {
+    if (!hasActiveFilters) return 'This Month';
+    
+    const parts: string[] = [];
+    
+    // Date range description
+    if (filters.startDate && filters.endDate) {
+      const startStr = filters.startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const endStr = filters.endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      parts.push(`${startStr} - ${endStr}`);
+    } else if (filters.startDate) {
+      const startStr = filters.startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      parts.push(`From ${startStr}`);
+    } else if (filters.endDate) {
+      const endStr = filters.endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      parts.push(`Until ${endStr}`);
+    } else {
+      // No date filter, add default period label
+      parts.push('This Month');
+    }
+    
+    // Location description
+    if (filters.locationId) {
+      const location = locations.find(l => l.id === filters.locationId);
+      if (location) {
+        parts.push(location.name);
+      }
+    }
+    
+    return parts.join(' • ');
+  }, [hasActiveFilters, filters.startDate, filters.endDate, filters.locationId, locations]);
+
   if (isLoading) {
     return (
-      <div className={styles.container}>
-        <Header />
+      <AppLayout>
         <LoadingSpinner label="Loading..." />
-      </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div className={styles.container}>
-      <Header employee={employee} />
-
+    <AppLayout employee={employee}>
       <div className={styles.content}>
         {/* Page Header */}
         <div className={styles.pageHeader}>
-          <Button
-            appearance="subtle"
-            icon={<ArrowLeftRegular />}
-            onClick={() => window.history.back()}
-          >
-            Back
-          </Button>
-          <HistoryRegular style={{ fontSize: '24px' }} />
-          <Text className={styles.pageTitle}>Check-In History</Text>
+          <Text className={styles.pageTitle}>
+            <HistoryRegular />
+            Check-In History
+          </Text>
           <Button
             appearance="subtle"
             icon={<ArrowDownloadRegular />}
@@ -281,13 +304,13 @@ const HistoryPage: React.FC = () => {
             <EnhancedTimeSummary
               summary={summary}
               loading={summaryLoading}
-              title={hasActiveFilters ? 'Filtered Period' : 'This Month'}
+              title={summaryTitle}
               showChart={true}
             />
           </div>
         </div>
       </div>
-    </div>
+    </AppLayout>
   );
 };
 

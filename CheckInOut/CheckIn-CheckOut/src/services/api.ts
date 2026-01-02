@@ -241,7 +241,8 @@ export async function getHistory(
 export async function getTimeSummary(
   employeeId: string,
   startDate: Date,
-  endDate: Date
+  endDate: Date,
+  locationId?: string | null
 ): Promise<ApiResponse<TimeSummary>> {
   await delay(400);
   
@@ -250,7 +251,8 @@ export async function getTimeSummary(
       r.employeeId === employeeId &&
       r.checkInTime >= startDate &&
       r.checkInTime <= endDate &&
-      r.durationMinutes !== null
+      r.durationMinutes !== null &&
+      (locationId ? r.locationId === locationId : true)
   );
   
   const totalMinutes = records.reduce((sum, r) => sum + (r.durationMinutes || 0), 0);

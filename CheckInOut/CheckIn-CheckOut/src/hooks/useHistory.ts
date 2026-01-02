@@ -11,6 +11,11 @@ export function useHistory(employeeId: string | null, initialFilters?: HistoryFi
     initialFilters || { startDate: null, endDate: null, locationId: null }
   );
 
+  // Extract primitive values for stable dependency tracking
+  const startTime = filters.startDate?.getTime() ?? null;
+  const endTime = filters.endDate?.getTime() ?? null;
+  const locationId = filters.locationId;
+
   const fetchHistory = useCallback(async () => {
     if (!employeeId) {
       setRecords([]);
@@ -22,7 +27,12 @@ export function useHistory(employeeId: string | null, initialFilters?: HistoryFi
     setError(null);
     
     try {
-      const response = await getHistory(employeeId, filters);
+      const filtersToApply: HistoryFilters = {
+        startDate: startTime ? new Date(startTime) : null,
+        endDate: endTime ? new Date(endTime) : null,
+        locationId: locationId,
+      };
+      const response = await getHistory(employeeId, filtersToApply);
       if (response.success) {
         setRecords(response.data);
       } else {
@@ -33,7 +43,7 @@ export function useHistory(employeeId: string | null, initialFilters?: HistoryFi
     } finally {
       setLoading(false);
     }
-  }, [employeeId, filters]);
+  }, [employeeId, startTime, endTime, locationId]);
 
   useEffect(() => {
     fetchHistory();
@@ -58,7 +68,12 @@ export function useHistory(employeeId: string | null, initialFilters?: HistoryFi
   };
 }
 
-export function useTimeSummary(employeeId: string | null, startDate: Date, endDate: Date) {
+export function useTimeSummary(
+  employeeId: string | null,
+  startDate: Date,
+  endDate: Date,
+  locationId?: string | null
+) {
   const [summary, setSummary] = useState<TimeSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -81,7 +96,8 @@ export function useTimeSummary(employeeId: string | null, startDate: Date, endDa
       const response = await getTimeSummary(
         employeeId,
         startOfDay(new Date(startTime)),
-        endOfDay(new Date(endTime))
+        endOfDay(new Date(endTime)),
+        locationId
       );
       if (response.success) {
         setSummary(response.data);
@@ -93,7 +109,7 @@ export function useTimeSummary(employeeId: string | null, startDate: Date, endDa
     } finally {
       setLoading(false);
     }
-  }, [employeeId, startTime, endTime]);
+  }, [employeeId, startTime, endTime, locationId]);
 
   useEffect(() => {
     fetchSummary();
