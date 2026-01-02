@@ -63,6 +63,10 @@ export function useTimeSummary(employeeId: string | null, startDate: Date, endDa
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Use timestamps to avoid Date object reference issues in useCallback
+  const startTime = startDate.getTime();
+  const endTime = endDate.getTime();
+
   const fetchSummary = useCallback(async () => {
     if (!employeeId) {
       setSummary(null);
@@ -76,8 +80,8 @@ export function useTimeSummary(employeeId: string | null, startDate: Date, endDa
     try {
       const response = await getTimeSummary(
         employeeId,
-        startOfDay(startDate),
-        endOfDay(endDate)
+        startOfDay(new Date(startTime)),
+        endOfDay(new Date(endTime))
       );
       if (response.success) {
         setSummary(response.data);
@@ -89,7 +93,7 @@ export function useTimeSummary(employeeId: string | null, startDate: Date, endDa
     } finally {
       setLoading(false);
     }
-  }, [employeeId, startDate, endDate]);
+  }, [employeeId, startTime, endTime]);
 
   useEffect(() => {
     fetchSummary();

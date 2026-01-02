@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   makeStyles,
   tokens,
@@ -74,8 +74,8 @@ const Dashboard: React.FC = () => {
   // History
   const { records, loading: historyLoading } = useHistory(employee?.id || null);
   
-  // Time summary for current week
-  const weekRange = getWeekRange();
+  // Time summary for current week - memoize to prevent infinite re-renders
+  const weekRange = useMemo(() => getWeekRange(), []);
   const { summary, loading: summaryLoading } = useTimeSummary(
     employee?.id || null,
     weekRange.start,
