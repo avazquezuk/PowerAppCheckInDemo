@@ -28,13 +28,17 @@ export const bcConfig: BCConfig = {
 };
 
 /**
- * API Endpoints for Business Central entities
+ * API Endpoints for LS Central entities
  */
 export const bcEndpoints = {
-  employees: '/employees',
-  locations: '/locations',
-  checkInOutRecords: '/checkInOutRecords',
-  timeSummaries: '/timeSummaries',
+  /** LSC STAFF Employee (Table 10015057) */
+  employees: '/lscStaffEmployees',
+  /** LSC Work Location (Table 10015021) */
+  locations: '/lscWorkLocations',
+  /** LSC Time Entry Registration (Table 10015007) */
+  timeEntryRegistrations: '/lscTimeEntryRegistrations',
+  // Legacy alias
+  checkInOutRecords: '/lscTimeEntryRegistrations',
 } as const;
 
 /**

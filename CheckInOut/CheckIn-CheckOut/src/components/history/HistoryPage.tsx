@@ -174,7 +174,7 @@ const HistoryPage: React.FC = () => {
         record.checkInTime.toLocaleTimeString(),
         record.checkOutTime?.toLocaleTimeString() || 'In Progress',
         record.durationMinutes ? (record.durationMinutes / 60).toFixed(2) : '-',
-        record.notes || '',
+        record.entryEmployeeComment || '',
       ];
     });
 

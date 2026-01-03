@@ -56,12 +56,12 @@ const LocationFilter: React.FC<LocationFilterProps> = ({
     return locations.filter(
       loc => 
         loc.name.toLowerCase().includes(term) ||
-        loc.address.toLowerCase().includes(term)
+        (loc.workRegion && loc.workRegion.toLowerCase().includes(term))
     );
   }, [locations, searchTerm]);
 
   const selectedLocation = locations.find(l => l.id === selectedLocationId);
-  const activeLocations = locations.filter(l => l.isActive);
+  const activeLocations = locations.filter(l => l.status === 'Active');
 
   const handleSelect = (_: unknown, data: { optionValue?: string }) => {
     onChange(data.optionValue || null);
@@ -113,7 +113,7 @@ const LocationFilter: React.FC<LocationFilterProps> = ({
             key={location.id}
             value={location.id}
             text={location.name}
-            disabled={!location.isActive}
+            disabled={location.status !== 'Active'}
           >
             <LocationRegular />
             <span style={{ marginLeft: '8px' }}>{location.name}</span>

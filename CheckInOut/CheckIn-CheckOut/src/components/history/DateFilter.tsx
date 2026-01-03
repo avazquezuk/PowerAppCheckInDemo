@@ -7,7 +7,7 @@ import {
   Option,
   Button,
 } from '@fluentui/react-components';
-import { FilterRegular, DismissRegular } from '@fluentui/react-icons';
+import { DismissRegular } from '@fluentui/react-icons';
 import { Location, HistoryFilters } from '@/types';
 
 const useStyles = makeStyles({

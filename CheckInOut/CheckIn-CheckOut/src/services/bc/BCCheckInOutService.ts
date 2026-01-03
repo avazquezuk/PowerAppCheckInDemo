@@ -9,7 +9,7 @@ import {
 } from '@/types';
 import { ICheckInOutService } from '../interfaces/ICheckInOutService';
 import { 
-  BCCheckInOutRecord, 
+  BCTimeEntryRegistration, 
   BCApiResponse,
   transformBCCheckInOutRecord 
 } from './bcTypes';
@@ -28,7 +28,7 @@ import { BCLocationService } from './BCLocationService';
 /**
  * Business Central implementation of ICheckInOutService.
  * 
- * Handles all check-in/out operations against Business Central.
+ * Handles all time entry operations against LS Central Time Entry Registration table.
  */
 export class BCCheckInOutService implements ICheckInOutService {
   private locationService = new BCLocationService();
@@ -90,19 +90,20 @@ export class BCCheckInOutService implements ICheckInOutService {
 
   async getCurrentStatus(employeeId: string): Promise<ApiResponse<CurrentStatus>> {
     return withErrorHandling(async () => {
+      // Find open time entry (status = 'Open' means not clocked out yet)
       const filter = new ODataFilterBuilder()
         .equals('employeeNo', employeeId)
         .and()
-        .isNull('checkOutDateTime')
+        .equals('status', 'Open')
         .build();
 
-      const url = buildBCUrl(bcEndpoints.checkInOutRecords, { 
+      const url = buildBCUrl(bcEndpoints.timeEntryRegistrations, { 
         '$filter': filter,
         '$top': '1'
       });
       
       const result = await withRetry(() => 
-        this.fetchFromBC<BCApiResponse<BCCheckInOutRecord>>(url)
+        this.fetchFromBC<BCApiResponse<BCTimeEntryRegistration>>(url)
       );
 
       if (result.value.length > 0) {
@@ -136,16 +137,24 @@ export class BCCheckInOutService implements ICheckInOutService {
       }
 
       const now = new Date();
+      const dateStr = now.toISOString().split('T')[0];
+      const timeStr = now.toTimeString().split(' ')[0];
+      
+      // Create LSC Time Entry Registration record
       const bcRecord = {
         employeeNo: employeeId,
-        locationCode: data.locationId,
-        checkInDateTime: now.toISOString(),
-        notes: data.notes || '',
+        workLocation: data.locationId,
+        systemDateEntry: dateStr,
+        systemTimeEntry: timeStr,
+        status: 'Open',
+        entryMethod: 'Automatic',
+        entryEmployeeComment: data.notes || '',
+        originLogon: 'PowerApp',
       };
 
-      const url = buildBCUrl(bcEndpoints.checkInOutRecords);
+      const url = buildBCUrl(bcEndpoints.timeEntryRegistrations);
       const result = await withRetry(() => 
-        this.postToBC<BCCheckInOutRecord>(url, bcRecord)
+        this.postToBC<BCTimeEntryRegistration>(url, bcRecord)
       );
 
       return transformBCCheckInOutRecord(result);
@@ -157,16 +166,16 @@ export class BCCheckInOutService implements ICheckInOutService {
     data: CheckOutFormData
   ): Promise<ApiResponse<CheckInOutRecord>> {
     return withErrorHandling(async () => {
-      // Find open check-in
+      // Find open time entry
       const filter = new ODataFilterBuilder()
         .equals('employeeNo', employeeId)
         .and()
-        .isNull('checkOutDateTime')
+        .equals('status', 'Open')
         .build();
 
-      const url = buildBCUrl(bcEndpoints.checkInOutRecords, { '$filter': filter });
+      const url = buildBCUrl(bcEndpoints.timeEntryRegistrations, { '$filter': filter });
       const result = await withRetry(() => 
-        this.fetchFromBC<BCApiResponse<BCCheckInOutRecord>>(url)
+        this.fetchFromBC<BCApiResponse<BCTimeEntryRegistration>>(url)
       );
 
       if (result.value.length === 0) {
@@ -175,23 +184,28 @@ export class BCCheckInOutService implements ICheckInOutService {
 
       const record = result.value[0];
       const now = new Date();
-      const checkInTime = new Date(record.checkInDateTime);
-      const durationMinutes = Math.round(
-        (now.getTime() - checkInTime.getTime()) / (1000 * 60)
-      );
+      const dateStr = now.toISOString().split('T')[0];
+      const timeStr = now.toTimeString().split(' ')[0];
+      
+      // Calculate hours worked
+      const checkInDate = new Date(record.systemDateEntry);
+      const [inHours, inMinutes] = record.systemTimeEntry.split(':').map(Number);
+      checkInDate.setHours(inHours, inMinutes);
+      const hoursWorked = (now.getTime() - checkInDate.getTime()) / (1000 * 60 * 60);
 
       const updateData = {
-        checkOutDateTime: now.toISOString(),
-        durationMinutes,
-        notes: data.notes 
-          ? `${record.notes} | ${data.notes}`.trim() 
-          : record.notes,
+        systemDateExit: dateStr,
+        systemTimeExit: timeStr,
+        noOfHours: Math.round(hoursWorked * 100) / 100,
+        status: 'Closed',
+        entryEmployeeComment: data.notes 
+          ? `${record.entryEmployeeComment} | ${data.notes}`.trim() 
+          : record.entryEmployeeComment,
       };
 
-      // Note: In real BC, you'd need to get the etag from the record
-      const etag = '*'; // Simplified for demo
-      const updateUrl = `${buildBCUrl(bcEndpoints.checkInOutRecords)}(${record.systemId})`;
-      const updated = await this.patchBC<BCCheckInOutRecord>(updateUrl, updateData, etag);
+      const etag = '*';
+      const updateUrl = `${buildBCUrl(bcEndpoints.timeEntryRegistrations)}(${record.systemId})`;
+      const updated = await this.patchBC<BCTimeEntryRegistration>(updateUrl, updateData, etag);
 
       return transformBCCheckInOutRecord(updated);
     }, null as unknown as CheckInOutRecord);
@@ -206,22 +220,22 @@ export class BCCheckInOutService implements ICheckInOutService {
         .equals('employeeNo', employeeId);
 
       if (filters?.startDate) {
-        filterBuilder.and().greaterThanOrEqual('checkInDateTime', filters.startDate);
+        filterBuilder.and().greaterThanOrEqual('systemDateEntry', filters.startDate);
       }
       if (filters?.endDate) {
-        filterBuilder.and().lessThanOrEqual('checkInDateTime', filters.endDate);
+        filterBuilder.and().lessThanOrEqual('systemDateEntry', filters.endDate);
       }
       if (filters?.locationId) {
-        filterBuilder.and().equals('locationCode', filters.locationId);
+        filterBuilder.and().equals('workLocation', filters.locationId);
       }
 
-      const url = buildBCUrl(bcEndpoints.checkInOutRecords, { 
+      const url = buildBCUrl(bcEndpoints.timeEntryRegistrations, { 
         '$filter': filterBuilder.build(),
-        '$orderby': 'checkInDateTime desc'
+        '$orderby': 'systemDateEntry desc, systemTimeEntry desc'
       });
       
       const result = await withRetry(() => 
-        this.fetchFromBC<BCApiResponse<BCCheckInOutRecord>>(url)
+        this.fetchFromBC<BCApiResponse<BCTimeEntryRegistration>>(url)
       );
 
       return result.value.map(transformBCCheckInOutRecord);
@@ -238,22 +252,22 @@ export class BCCheckInOutService implements ICheckInOutService {
       const filterBuilder = new ODataFilterBuilder()
         .equals('employeeNo', employeeId)
         .and()
-        .greaterThanOrEqual('checkInDateTime', startDate)
+        .greaterThanOrEqual('systemDateEntry', startDate)
         .and()
-        .lessThanOrEqual('checkInDateTime', endDate)
+        .lessThanOrEqual('systemDateEntry', endDate)
         .and()
-        .isNotNull('durationMinutes');
+        .isNotNull('noOfHours');
 
       if (locationId) {
-        filterBuilder.and().equals('locationCode', locationId);
+        filterBuilder.and().equals('workLocation', locationId);
       }
 
-      const url = buildBCUrl(bcEndpoints.checkInOutRecords, { 
+      const url = buildBCUrl(bcEndpoints.timeEntryRegistrations, { 
         '$filter': filterBuilder.build()
       });
       
       const result = await withRetry(() => 
-        this.fetchFromBC<BCApiResponse<BCCheckInOutRecord>>(url)
+        this.fetchFromBC<BCApiResponse<BCTimeEntryRegistration>>(url)
       );
 
       const records = result.value.map(transformBCCheckInOutRecord);
@@ -303,9 +317,9 @@ export class BCCheckInOutService implements ICheckInOutService {
 
   async getRecordById(recordId: string): Promise<ApiResponse<CheckInOutRecord>> {
     return withErrorHandling(async () => {
-      const url = `${buildBCUrl(bcEndpoints.checkInOutRecords)}(${recordId})`;
+      const url = `${buildBCUrl(bcEndpoints.timeEntryRegistrations)}(${recordId})`;
       const result = await withRetry(() => 
-        this.fetchFromBC<BCCheckInOutRecord>(url)
+        this.fetchFromBC<BCTimeEntryRegistration>(url)
       );
 
       return transformBCCheckInOutRecord(result);
@@ -318,38 +332,40 @@ export class BCCheckInOutService implements ICheckInOutService {
     _reason: string
   ): Promise<ApiResponse<CheckInOutRecord>> {
     return withErrorHandling(async () => {
-      const bcUpdates: Partial<BCCheckInOutRecord> = {};
+      const bcUpdates: Partial<BCTimeEntryRegistration> = {};
       
+      // Map app fields to LS Central fields
       if (updates.checkInTime) {
-        bcUpdates.checkInDateTime = updates.checkInTime.toISOString();
+        bcUpdates.userDateEntry = updates.checkInTime.toISOString().split('T')[0];
+        bcUpdates.userTimeEntry = updates.checkInTime.toTimeString().split(' ')[0];
       }
       if (updates.checkOutTime) {
-        bcUpdates.checkOutDateTime = updates.checkOutTime.toISOString();
+        bcUpdates.userDateExit = updates.checkOutTime.toISOString().split('T')[0];
+        bcUpdates.userTimeExit = updates.checkOutTime.toTimeString().split(' ')[0];
       }
       if (updates.locationId) {
-        bcUpdates.locationCode = updates.locationId;
+        bcUpdates.workLocation = updates.locationId;
       }
-      if (updates.notes !== undefined) {
-        bcUpdates.notes = updates.notes;
+      if (updates.entryEmployeeComment !== undefined) {
+        bcUpdates.entryEmployeeComment = updates.entryEmployeeComment;
       }
 
-      // Recalculate duration if times changed
+      // Recalculate hours if times changed
       if (updates.checkInTime || updates.checkOutTime) {
         const current = await this.getRecordById(recordId);
         if (current.success) {
           const checkIn = updates.checkInTime || current.data.checkInTime;
           const checkOut = updates.checkOutTime || current.data.checkOutTime;
           if (checkOut) {
-            bcUpdates.durationMinutes = Math.round(
-              (checkOut.getTime() - checkIn.getTime()) / (1000 * 60)
-            );
+            const hours = (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60);
+            bcUpdates.noOfHours = Math.round(hours * 100) / 100;
           }
         }
       }
 
       const etag = '*';
-      const url = `${buildBCUrl(bcEndpoints.checkInOutRecords)}(${recordId})`;
-      const result = await this.patchBC<BCCheckInOutRecord>(url, bcUpdates, etag);
+      const url = `${buildBCUrl(bcEndpoints.timeEntryRegistrations)}(${recordId})`;
+      const result = await this.patchBC<BCTimeEntryRegistration>(url, bcUpdates, etag);
 
       return transformBCCheckInOutRecord(result);
     }, null as unknown as CheckInOutRecord);
@@ -357,22 +373,36 @@ export class BCCheckInOutService implements ICheckInOutService {
 
   async addMissingEntry(
     employeeId: string,
-    record: Omit<CheckInOutRecord, 'id' | 'createdAt' | 'modifiedAt' | 'createdBy' | 'modifiedBy'>,
+    record: Omit<CheckInOutRecord, 'id' | 'systemDateEntry' | 'systemTimeEntry' | 'systemDateExit' | 'systemTimeExit' | 'checkInTime' | 'checkOutTime' | 'durationMinutes'> & { checkInTime: Date; checkOutTime?: Date | null },
     _reason: string
   ): Promise<ApiResponse<CheckInOutRecord>> {
     return withErrorHandling(async () => {
+      const checkInDate = record.checkInTime;
+      const checkOutDate = record.checkOutTime;
+      
+      let noOfHours: number | null = null;
+      if (checkOutDate) {
+        noOfHours = Math.round(((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60)) * 100) / 100;
+      }
+
       const bcRecord = {
         employeeNo: employeeId,
-        locationCode: record.locationId,
-        checkInDateTime: record.checkInTime.toISOString(),
-        checkOutDateTime: record.checkOutTime?.toISOString() || null,
-        durationMinutes: record.durationMinutes,
-        notes: record.notes,
+        workLocation: record.locationId,
+        workRoleCode: record.workRoleCode || '',
+        systemDateEntry: checkInDate.toISOString().split('T')[0],
+        systemTimeEntry: checkInDate.toTimeString().split(' ')[0],
+        systemDateExit: checkOutDate?.toISOString().split('T')[0] || null,
+        systemTimeExit: checkOutDate?.toTimeString().split(' ')[0] || null,
+        noOfHours,
+        status: checkOutDate ? 'Closed' : 'Open',
+        entryMethod: 'Manual',
+        entryEmployeeComment: record.entryEmployeeComment || '',
+        originLogon: 'PowerApp',
       };
 
-      const url = buildBCUrl(bcEndpoints.checkInOutRecords);
+      const url = buildBCUrl(bcEndpoints.timeEntryRegistrations);
       const result = await withRetry(() => 
-        this.postToBC<BCCheckInOutRecord>(url, bcRecord)
+        this.postToBC<BCTimeEntryRegistration>(url, bcRecord)
       );
 
       return transformBCCheckInOutRecord(result);

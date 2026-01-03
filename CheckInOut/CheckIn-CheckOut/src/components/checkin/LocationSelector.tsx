@@ -109,7 +109,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
                   {location.name}
                   {isRecent && <span className={styles.recentLabel}>(Recent)</span>}
                 </span>
-                <span className={styles.optionAddress}>{location.address}</span>
+                <span className={styles.optionAddress}>{location.workRegion || location.id}</span>
               </div>
             </Option>
           );

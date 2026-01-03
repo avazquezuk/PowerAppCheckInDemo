@@ -9,3 +9,6 @@ export * from './history';
 
 // Dashboard components
 export * from './dashboard';
+
+// Employee components
+export * from './employee';

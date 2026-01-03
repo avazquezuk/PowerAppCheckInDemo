@@ -115,10 +115,10 @@ const HistoryItem: React.FC<HistoryItemProps> = ({ record, location }) => {
           </Text>
         </div>
 
-        {record.notes && (
+        {record.entryEmployeeComment && (
           <div className={styles.detailRow}>
             <NoteRegular className={styles.detailIcon} />
-            <Text className={styles.notes}>{record.notes}</Text>
+            <Text className={styles.notes}>{record.entryEmployeeComment}</Text>
           </div>
         )}
       </div>

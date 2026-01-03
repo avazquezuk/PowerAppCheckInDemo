@@ -15,13 +15,15 @@ import {
   mockCheckInOutRecords,
   currentUserId,
 } from './mockData';
-import { generateId } from '@/utils';
 
 // Simulated delay to mimic API calls
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // In-memory store for mock data (allows mutations)
 let checkInOutRecords = [...mockCheckInOutRecords];
+
+// Auto-increment sequence for new records
+let nextSequence = Math.max(...mockCheckInOutRecords.map(r => r.id)) + 1;
 
 /**
  * Get current employee
@@ -56,7 +58,7 @@ export async function getEmployeeById(id: string): Promise<ApiResponse<Employee>
  */
 export async function getAllEmployees(): Promise<ApiResponse<Employee[]>> {
   await delay(300);
-  return { data: mockEmployees.filter(e => e.isActive), success: true };
+  return { data: mockEmployees.filter(e => e.status === 'Active'), success: true };
 }
 
 /**
@@ -64,7 +66,13 @@ export async function getAllEmployees(): Promise<ApiResponse<Employee[]>> {
  */
 export async function getDirectReports(managerId: string): Promise<ApiResponse<Employee[]>> {
   await delay(300);
-  const reports = mockEmployees.filter(e => e.managerId === managerId && e.isActive);
+  const manager = mockEmployees.find(e => e.id === managerId);
+  if (!manager) {
+    return { data: [], success: true };
+  }
+  const reports = mockEmployees.filter(
+    e => e.workLocation === manager.workLocation && e.id !== managerId && e.status === 'Active'
+  );
   return { data: reports, success: true };
 }
 
@@ -73,7 +81,7 @@ export async function getDirectReports(managerId: string): Promise<ApiResponse<E
  */
 export async function getLocations(): Promise<ApiResponse<Location[]>> {
   await delay(300);
-  return { data: mockLocations.filter(l => l.isActive), success: true };
+  return { data: mockLocations.filter(l => l.status === 'Active'), success: true };
 }
 
 /**
@@ -96,9 +104,9 @@ export async function getLocationById(id: string): Promise<ApiResponse<Location>
 export async function getCurrentStatus(employeeId: string): Promise<ApiResponse<CurrentStatus>> {
   await delay(300);
   
-  // Find open check-in (no check-out time)
+  // Find open time entry (status = 'Open')
   const openRecord = checkInOutRecords.find(
-    r => r.employeeId === employeeId && r.checkOutTime === null
+    r => r.employeeId === employeeId && r.status === 'Open'
   );
   
   if (openRecord) {
@@ -134,7 +142,7 @@ export async function checkIn(
   
   // Check if already checked in
   const existingOpen = checkInOutRecords.find(
-    r => r.employeeId === employeeId && r.checkOutTime === null
+    r => r.employeeId === employeeId && r.status === 'Open'
   );
   
   if (existingOpen) {
@@ -146,18 +154,31 @@ export async function checkIn(
   }
   
   const now = new Date();
+  const timeStr = now.toTimeString().split(' ')[0];
+  
   const newRecord: CheckInOutRecord = {
-    id: generateId(),
+    id: nextSequence++,
     employeeId,
     locationId: data.locationId,
+    workRoleCode: null,
+    systemDateEntry: now,
+    systemTimeEntry: timeStr,
+    systemDateExit: null,
+    systemTimeExit: null,
+    userDateEntry: null,
+    userTimeEntry: null,
+    userDateExit: null,
+    userTimeExit: null,
+    noOfHours: null,
+    status: 'Open',
+    entryStatus: 'OK',
+    leavingStatus: null,
+    entryMethod: 'Automatic',
+    entryEmployeeComment: data.notes || '',
+    originLogon: 'PowerApp',
     checkInTime: now,
     checkOutTime: null,
     durationMinutes: null,
-    notes: data.notes || '',
-    createdBy: employeeId,
-    createdAt: now,
-    modifiedBy: employeeId,
-    modifiedAt: now,
   };
   
   checkInOutRecords = [newRecord, ...checkInOutRecords];
@@ -175,7 +196,7 @@ export async function checkOut(
   await delay(500);
   
   const recordIndex = checkInOutRecords.findIndex(
-    r => r.employeeId === employeeId && r.checkOutTime === null
+    r => r.employeeId === employeeId && r.status === 'Open'
   );
   
   if (recordIndex === -1) {
@@ -187,18 +208,23 @@ export async function checkOut(
   }
   
   const now = new Date();
+  const timeStr = now.toTimeString().split(' ')[0];
   const record = checkInOutRecords[recordIndex];
-  const durationMinutes = Math.round(
-    (now.getTime() - record.checkInTime.getTime()) / (1000 * 60)
-  );
+  const hoursWorked = (now.getTime() - record.checkInTime.getTime()) / (1000 * 60 * 60);
+  const durationMinutes = Math.round(hoursWorked * 60);
   
   const updatedRecord: CheckInOutRecord = {
     ...record,
+    systemDateExit: now,
+    systemTimeExit: timeStr,
+    noOfHours: Math.round(hoursWorked * 100) / 100,
+    status: 'Closed',
+    leavingStatus: 'OK',
+    entryEmployeeComment: data.notes 
+      ? `${record.entryEmployeeComment} | ${data.notes}`.trim() 
+      : record.entryEmployeeComment,
     checkOutTime: now,
     durationMinutes,
-    notes: data.notes ? `${record.notes} | ${data.notes}`.trim() : record.notes,
-    modifiedBy: employeeId,
-    modifiedAt: now,
   };
   
   checkInOutRecords[recordIndex] = updatedRecord;

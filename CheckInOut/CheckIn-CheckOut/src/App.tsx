@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Dashboard } from './components';
 import { HistoryPage, RecentActivityPage } from './components/history';
+import { EmployeeProfile } from './components/employee';
 import { ServiceProvider } from './context';
 
 class ErrorBoundary extends React.Component<
@@ -41,6 +42,7 @@ function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/recent" element={<RecentActivityPage />} />
             <Route path="/history" element={<HistoryPage />} />
+            <Route path="/profile" element={<EmployeeProfile />} />
           </Routes>
         </BrowserRouter>
       </ServiceProvider>

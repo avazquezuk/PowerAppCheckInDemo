@@ -9,13 +9,16 @@ import {
 } from '@/types';
 import { ICheckInOutService } from '../interfaces/ICheckInOutService';
 import { mockCheckInOutRecords, mockLocations } from '../mockData';
-import { generateId } from '@/utils';
 
 // Simulated delay to mimic API calls
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Auto-increment sequence for mock records
+let nextSequence = Math.max(...mockCheckInOutRecords.map(r => r.id)) + 1;
+
 /**
  * Mock implementation of ICheckInOutService for local development.
+ * Uses LSC Time Entry Registration structure.
  */
 export class MockCheckInOutService implements ICheckInOutService {
   // In-memory store for mock data (allows mutations)
@@ -24,9 +27,9 @@ export class MockCheckInOutService implements ICheckInOutService {
   async getCurrentStatus(employeeId: string): Promise<ApiResponse<CurrentStatus>> {
     await delay(300);
     
-    // Find open check-in (no check-out time)
+    // Find open time entry (status = 'Open')
     const openRecord = this.records.find(
-      r => r.employeeId === employeeId && r.checkOutTime === null
+      r => r.employeeId === employeeId && r.status === 'Open'
     );
     
     if (openRecord) {
@@ -59,7 +62,7 @@ export class MockCheckInOutService implements ICheckInOutService {
     
     // Check if already checked in
     const existingOpen = this.records.find(
-      r => r.employeeId === employeeId && r.checkOutTime === null
+      r => r.employeeId === employeeId && r.status === 'Open'
     );
     
     if (existingOpen) {
@@ -71,18 +74,31 @@ export class MockCheckInOutService implements ICheckInOutService {
     }
     
     const now = new Date();
+    const timeStr = now.toTimeString().split(' ')[0];
+    
     const newRecord: CheckInOutRecord = {
-      id: generateId(),
+      id: nextSequence++,
       employeeId,
       locationId: data.locationId,
+      workRoleCode: null,
+      systemDateEntry: now,
+      systemTimeEntry: timeStr,
+      systemDateExit: null,
+      systemTimeExit: null,
+      userDateEntry: null,
+      userTimeEntry: null,
+      userDateExit: null,
+      userTimeExit: null,
+      noOfHours: null,
+      status: 'Open',
+      entryStatus: 'OK',
+      leavingStatus: null,
+      entryMethod: 'Automatic',
+      entryEmployeeComment: data.notes || '',
+      originLogon: 'PowerApp',
       checkInTime: now,
       checkOutTime: null,
       durationMinutes: null,
-      notes: data.notes || '',
-      createdBy: employeeId,
-      createdAt: now,
-      modifiedBy: employeeId,
-      modifiedAt: now,
     };
     
     this.records = [newRecord, ...this.records];
@@ -97,7 +113,7 @@ export class MockCheckInOutService implements ICheckInOutService {
     await delay(500);
     
     const recordIndex = this.records.findIndex(
-      r => r.employeeId === employeeId && r.checkOutTime === null
+      r => r.employeeId === employeeId && r.status === 'Open'
     );
     
     if (recordIndex === -1) {
@@ -109,18 +125,23 @@ export class MockCheckInOutService implements ICheckInOutService {
     }
     
     const now = new Date();
+    const timeStr = now.toTimeString().split(' ')[0];
     const record = this.records[recordIndex];
-    const durationMinutes = Math.round(
-      (now.getTime() - record.checkInTime.getTime()) / (1000 * 60)
-    );
+    const hoursWorked = (now.getTime() - record.checkInTime.getTime()) / (1000 * 60 * 60);
+    const durationMinutes = Math.round(hoursWorked * 60);
     
     const updatedRecord: CheckInOutRecord = {
       ...record,
+      systemDateExit: now,
+      systemTimeExit: timeStr,
+      noOfHours: Math.round(hoursWorked * 100) / 100,
+      status: 'Closed',
+      leavingStatus: 'OK',
+      entryEmployeeComment: data.notes 
+        ? `${record.entryEmployeeComment} | ${data.notes}`.trim() 
+        : record.entryEmployeeComment,
       checkOutTime: now,
       durationMinutes,
-      notes: data.notes ? `${record.notes} | ${data.notes}`.trim() : record.notes,
-      modifiedBy: employeeId,
-      modifiedAt: now,
     };
     
     this.records[recordIndex] = updatedRecord;
@@ -215,7 +236,7 @@ export class MockCheckInOutService implements ICheckInOutService {
 
   async getRecordById(recordId: string): Promise<ApiResponse<CheckInOutRecord>> {
     await delay(200);
-    const record = this.records.find(r => r.id === recordId);
+    const record = this.records.find(r => r.id === Number(recordId));
     
     if (!record) {
       return { data: null as unknown as CheckInOutRecord, success: false, error: 'Record not found' };
@@ -231,24 +252,22 @@ export class MockCheckInOutService implements ICheckInOutService {
   ): Promise<ApiResponse<CheckInOutRecord>> {
     await delay(500);
     
-    const recordIndex = this.records.findIndex(r => r.id === recordId);
+    const recordIndex = this.records.findIndex(r => r.id === Number(recordId));
     
     if (recordIndex === -1) {
       return { data: null as unknown as CheckInOutRecord, success: false, error: 'Record not found' };
     }
     
-    const now = new Date();
     const updatedRecord: CheckInOutRecord = {
       ...this.records[recordIndex],
       ...updates,
-      modifiedAt: now,
     };
     
-    // Recalculate duration if times changed
+    // Recalculate duration and noOfHours if times changed
     if (updatedRecord.checkOutTime && updatedRecord.checkInTime) {
-      updatedRecord.durationMinutes = Math.round(
-        (updatedRecord.checkOutTime.getTime() - updatedRecord.checkInTime.getTime()) / (1000 * 60)
-      );
+      const hours = (updatedRecord.checkOutTime.getTime() - updatedRecord.checkInTime.getTime()) / (1000 * 60 * 60);
+      updatedRecord.noOfHours = Math.round(hours * 100) / 100;
+      updatedRecord.durationMinutes = Math.round(hours * 60);
     }
     
     this.records[recordIndex] = updatedRecord;
@@ -258,20 +277,45 @@ export class MockCheckInOutService implements ICheckInOutService {
 
   async addMissingEntry(
     employeeId: string,
-    record: Omit<CheckInOutRecord, 'id' | 'createdAt' | 'modifiedAt' | 'createdBy' | 'modifiedBy'>,
+    record: Omit<CheckInOutRecord, 'id'> & { checkInTime: Date; checkOutTime?: Date | null },
     _reason: string
   ): Promise<ApiResponse<CheckInOutRecord>> {
     await delay(500);
     
-    const now = new Date();
+    const checkInTime = record.checkInTime;
+    const checkOutTime = record.checkOutTime;
+    let noOfHours: number | null = null;
+    let durationMinutes: number | null = null;
+    
+    if (checkOutTime) {
+      const hours = (checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60 * 60);
+      noOfHours = Math.round(hours * 100) / 100;
+      durationMinutes = Math.round(hours * 60);
+    }
+    
     const newRecord: CheckInOutRecord = {
-      ...record,
-      id: generateId(),
+      id: nextSequence++,
       employeeId,
-      createdBy: employeeId,
-      createdAt: now,
-      modifiedBy: employeeId,
-      modifiedAt: now,
+      locationId: record.locationId,
+      workRoleCode: record.workRoleCode || null,
+      systemDateEntry: checkInTime,
+      systemTimeEntry: checkInTime.toTimeString().split(' ')[0],
+      systemDateExit: checkOutTime || null,
+      systemTimeExit: checkOutTime?.toTimeString().split(' ')[0] || null,
+      userDateEntry: null,
+      userTimeEntry: null,
+      userDateExit: null,
+      userTimeExit: null,
+      noOfHours,
+      status: checkOutTime ? 'Closed' : 'Open',
+      entryStatus: record.entryStatus || 'OK',
+      leavingStatus: record.leavingStatus || null,
+      entryMethod: 'Manual',
+      entryEmployeeComment: record.entryEmployeeComment || '',
+      originLogon: 'PowerApp',
+      checkInTime,
+      checkOutTime: checkOutTime || null,
+      durationMinutes,
     };
     
     this.records = [newRecord, ...this.records];

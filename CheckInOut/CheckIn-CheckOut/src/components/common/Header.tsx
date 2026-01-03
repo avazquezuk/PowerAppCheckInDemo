@@ -119,7 +119,7 @@ const Header: React.FC<HeaderProps> = ({ employee }) => {
           <div className={styles.userSection}>
             <div style={{ textAlign: 'right' }}>
               <Text className={styles.userName} block>{employee.name}</Text>
-              <Text className={styles.userRole}>{employee.department}</Text>
+              <Text className={styles.userRole}>{employee.jobTitle}</Text>
             </div>
             <Avatar
               name={employee.name}

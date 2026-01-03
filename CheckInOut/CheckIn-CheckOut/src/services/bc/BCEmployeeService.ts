@@ -96,7 +96,7 @@ export class BCEmployeeService implements IEmployeeService {
 
       const url = buildBCUrl(bcEndpoints.employees, { 
         '$filter': filter,
-        '$orderby': 'displayName asc'
+        '$orderby': 'lastName asc, firstName asc'
       });
       
       const result = await withRetry(() => 
@@ -109,15 +109,17 @@ export class BCEmployeeService implements IEmployeeService {
 
   async getDirectReports(managerId: string): Promise<ApiResponse<Employee[]>> {
     return withErrorHandling(async () => {
+      // In LS Central, direct reports are typically employees at the same work location
+      // where the manager is the responsible person
       const filter = new ODataFilterBuilder()
-        .equals('managerId', managerId)
+        .equals('workLocation', managerId)
         .and()
         .equals('status', 'Active')
         .build();
 
       const url = buildBCUrl(bcEndpoints.employees, { 
         '$filter': filter,
-        '$orderby': 'displayName asc'
+        '$orderby': 'lastName asc, firstName asc'
       });
       
       const result = await withRetry(() => 
@@ -130,15 +132,16 @@ export class BCEmployeeService implements IEmployeeService {
 
   async searchEmployees(query: string): Promise<ApiResponse<Employee[]>> {
     return withErrorHandling(async () => {
+      // Search by first name, last name, or employee no
       const filter = new ODataFilterBuilder()
-        .contains('displayName', query)
+        .contains('firstName', query)
         .and()
         .equals('status', 'Active')
         .build();
 
       const url = buildBCUrl(bcEndpoints.employees, { 
         '$filter': filter,
-        '$orderby': 'displayName asc',
+        '$orderby': 'lastName asc, firstName asc',
         '$top': '20'
       });
       

@@ -11,7 +11,7 @@ export function formatEmployeeName(employee: Employee): string {
  * Format location for display
  */
 export function formatLocationDisplay(location: Location): string {
-  return `${location.name} - ${location.address}`;
+  return `${location.name}${location.workRegion ? ` - ${location.workRegion}` : ''}`;
 }
 
 /**
@@ -85,7 +85,7 @@ export function filterLocations(locations: Location[], searchTerm: string): Loca
   return locations.filter(
     location =>
       location.name.toLowerCase().includes(term) ||
-      location.address.toLowerCase().includes(term) ||
+      (location.workRegion && location.workRegion.toLowerCase().includes(term)) ||
       location.id.toLowerCase().includes(term)
   );
 }

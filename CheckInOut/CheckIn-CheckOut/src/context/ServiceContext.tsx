@@ -7,7 +7,7 @@ import {
   getEmployeeService, 
   getLocationService, 
   getCheckInOutService,
-  ServiceProvider
+  ServiceProvider as ServiceProviderType
 } from '@/services/ServiceFactory';
 
 /**
@@ -17,7 +17,7 @@ interface ServiceContextValue {
   employeeService: IEmployeeService;
   locationService: ILocationService;
   checkInOutService: ICheckInOutService;
-  provider: ServiceProvider;
+  provider: ServiceProviderType;
 }
 
 const ServiceContext = createContext<ServiceContextValue | null>(null);
@@ -28,7 +28,7 @@ const ServiceContext = createContext<ServiceContextValue | null>(null);
 interface ServiceProviderProps {
   children: React.ReactNode;
   /** Override the default provider (useful for testing) */
-  provider?: ServiceProvider;
+  provider?: ServiceProviderType;
 }
 
 /**
@@ -97,6 +97,6 @@ export function useCheckInOutService(): ICheckInOutService {
 /**
  * Hook to get current service provider
  */
-export function useServiceProvider(): ServiceProvider {
+export function useServiceProvider(): ServiceProviderType {
   return useServices().provider;
 }

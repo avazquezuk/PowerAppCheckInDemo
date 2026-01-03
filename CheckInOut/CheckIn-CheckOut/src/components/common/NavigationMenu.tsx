@@ -11,6 +11,8 @@ import {
   ClockFilled,
   HistoryRegular,
   HistoryFilled,
+  PersonRegular,
+  PersonFilled,
   ChevronRightRegular,
 } from '@fluentui/react-icons';
 
@@ -102,6 +104,13 @@ const menuItems: MenuItem[] = [
     icon: <HistoryRegular />,
     iconActive: <HistoryFilled />,
     path: '/history',
+  },
+  {
+    id: 'profile',
+    label: 'My Profile',
+    icon: <PersonRegular />,
+    iconActive: <PersonFilled />,
+    path: '/profile',
   },
 ];
 
