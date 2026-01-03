@@ -16,10 +16,6 @@ import {
   BriefcaseRegular,
   BuildingRegular,
   LocationRegular,
-  BadgeRegular,
-  PersonAccountsRegular,
-  ClockRegular,
-  TagRegular,
 } from '@fluentui/react-icons';
 import { AppLayout } from '@/components/common';
 import { useEmployee } from '@/hooks';
@@ -200,11 +196,6 @@ const EmployeeProfileContent: React.FC<{ employee: Employee }> = ({ employee }) 
         <Divider />
         <div className={styles.section}>
           <Field 
-            label="Employee No." 
-            value={employee.id} 
-            icon={<BadgeRegular />} 
-          />
-          <Field 
             label="First Name" 
             value={employee.firstName} 
             icon={<PersonRegular />} 
@@ -258,41 +249,6 @@ const EmployeeProfileContent: React.FC<{ employee: Employee }> = ({ employee }) 
             label="Work Role" 
             value={employee.workRole} 
             icon={<BriefcaseRegular />} 
-          />
-        </div>
-      </Card>
-
-      {/* System Identifiers */}
-      <Card className={styles.card}>
-        <CardHeader
-          header={
-            <Text className={styles.cardTitle}>
-              <PersonAccountsRegular />
-              System Identifiers
-            </Text>
-          }
-        />
-        <Divider />
-        <div className={styles.section}>
-          <Field 
-            label="Retail Staff ID" 
-            value={employee.retailStaffId} 
-            icon={<BadgeRegular />} 
-          />
-          <Field 
-            label="Retail User ID" 
-            value={employee.retailUserId} 
-            icon={<PersonAccountsRegular />} 
-          />
-          <Field 
-            label="BC Employee No." 
-            value={employee.employeeNo} 
-            icon={<TagRegular />} 
-          />
-          <Field 
-            label="Time Entry ID" 
-            value={employee.timeEntryId} 
-            icon={<ClockRegular />} 
           />
         </div>
       </Card>
