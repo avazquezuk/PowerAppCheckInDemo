@@ -7,6 +7,12 @@ import {
   Avatar,
   Button,
   Tooltip,
+  Menu,
+  MenuTrigger,
+  MenuPopover,
+  MenuList,
+  MenuItem,
+  MenuDivider,
 } from '@fluentui/react-components';
 import {
   WeatherSunnyRegular,
@@ -14,6 +20,9 @@ import {
   HomeRegular,
   ClockRegular,
   HistoryRegular,
+  PersonRegular,
+  SignOutRegular,
+  SettingsRegular,
 } from '@fluentui/react-icons';
 import { Employee } from '@/types';
 import { getInitials } from '@/utils';
@@ -94,6 +103,10 @@ const Header: React.FC<HeaderProps> = ({ employee }) => {
   const location = useLocation();
   const pageInfo = getPageInfo(location.pathname);
 
+  // Use employee data (will be replaced with Office 365 when connector support is available)
+  const displayName = employee?.name || 'User';
+  const displayTitle = employee?.jobTitle || '';
+
   return (
     <header className={styles.header}>
       <div className={styles.titleSection}>
@@ -116,18 +129,37 @@ const Header: React.FC<HeaderProps> = ({ employee }) => {
         </Tooltip>
 
         {employee && (
-          <div className={styles.userSection}>
-            <div style={{ textAlign: 'right' }}>
-              <Text className={styles.userName} block>{employee.name}</Text>
-              <Text className={styles.userRole}>{employee.jobTitle}</Text>
-            </div>
-            <Avatar
-              name={employee.name}
-              initials={getInitials(employee.name)}
-              size={36}
-              color="brand"
-            />
-          </div>
+          <Menu>
+            <MenuTrigger>
+              <div className={styles.userSection} style={{ cursor: 'pointer' }}>
+                <div style={{ textAlign: 'right' }}>
+                  <Text className={styles.userName} block>{displayName}</Text>
+                  <Text className={styles.userRole}>{displayTitle}</Text>
+                </div>
+                <Avatar
+                  name={displayName}
+                  initials={getInitials(displayName)}
+                  size={36}
+                  color="brand"
+                />
+              </div>
+            </MenuTrigger>
+
+            <MenuPopover>
+              <MenuList>
+                <MenuItem icon={<PersonRegular />}>
+                  My Profile
+                </MenuItem>
+                <MenuItem icon={<SettingsRegular />}>
+                  Settings
+                </MenuItem>
+                <MenuDivider />
+                <MenuItem icon={<SignOutRegular />}>
+                  Sign Out
+                </MenuItem>
+              </MenuList>
+            </MenuPopover>
+          </Menu>
         )}
       </div>
     </header>

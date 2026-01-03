@@ -145,25 +145,36 @@ npm install --save-dev "@pa-client/power-code-sdk@https://github.com/microsoft/P
 
 ### Update Package.json Scripts
 
-Update the dev script in `package.json`:
+Update the scripts in `package.json` based on your operating system:
 
+**For Windows:**
 ```json
 {
   "scripts": {
-    "dev": "start pac code run && vite",
+    "start": "vite",
+    "dev": "vite",
+    "dev:pac": "start pac code run && vite",
     "build": "tsc -b && vite build"
   }
 }
 ```
 
-**Note for macOS users**: Remove `start` from the dev script:
+**For Linux/macOS:**
 ```json
 {
   "scripts": {
-    "dev": "vite && pac code run"
+    "start": "vite",
+    "dev": "vite",
+    "dev:pac": "pac code run & vite",
+    "build": "tsc -b && vite build"
   }
 }
 ```
+
+**Usage:**
+- `npm start` or `npm run dev` - Local development with Vite only
+- `npm run dev:pac` - Power Apps mode (requires pac CLI)
+- `npm run build` - Production build
 
 ### Create PowerProvider Component
 

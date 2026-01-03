@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 import { Dashboard } from './components';
 import { HistoryPage, RecentActivityPage } from './components/history';
 import { EmployeeProfile } from './components/employee';
@@ -18,13 +18,42 @@ class ErrorBoundary extends React.Component<
     return { hasError: true, error };
   }
 
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('Error caught by boundary:', error, errorInfo);
+  }
+
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: '20px', color: 'red' }}>
-          <h1>Something went wrong.</h1>
-          <pre>{this.state.error?.message}</pre>
-          <pre>{this.state.error?.stack}</pre>
+        <div style={{ 
+          padding: '20px', 
+          backgroundColor: '#fee',
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px'
+        }}>
+          <h1 style={{ color: '#c00', margin: 0 }}>Application Error</h1>
+          <p style={{ margin: 0 }}>Something went wrong while loading the app.</p>
+          <details style={{ marginTop: '10px' }}>
+            <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>Error Details</summary>
+            <pre style={{ 
+              backgroundColor: '#fff', 
+              padding: '10px', 
+              overflow: 'auto',
+              fontSize: '12px'
+            }}>
+              {this.state.error?.message}
+            </pre>
+            <pre style={{ 
+              backgroundColor: '#fff', 
+              padding: '10px', 
+              overflow: 'auto',
+              fontSize: '10px'
+            }}>
+              {this.state.error?.stack}
+            </pre>
+          </details>
         </div>
       );
     }
@@ -37,14 +66,14 @@ function App() {
   return (
     <ErrorBoundary>
       <ServiceProvider>
-        <BrowserRouter>
+        <HashRouter>
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/recent" element={<RecentActivityPage />} />
             <Route path="/history" element={<HistoryPage />} />
             <Route path="/profile" element={<EmployeeProfile />} />
           </Routes>
-        </BrowserRouter>
+        </HashRouter>
       </ServiceProvider>
     </ErrorBoundary>
   );

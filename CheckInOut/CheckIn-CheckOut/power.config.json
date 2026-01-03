@@ -1,0 +1,13 @@
+{
+  "appId": "ad7d10e4-0dac-4571-9f70-31ea900dfebd",
+  "appDisplayName": "Check In Check Out",
+  "description": null,
+  "environmentId": "b72ef45b-3c29-e724-9719-da75ad76b506",
+  "buildPath": "./dist",
+  "buildEntryPoint": "index.html",
+  "logoPath": "./public/vite.svg",
+  "localAppUrl": "http://localhost:3000/",
+  "region": "prod",
+  "connectionReferences": {},
+  "databaseReferences": {}
+}
