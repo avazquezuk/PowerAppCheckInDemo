@@ -1,0 +1,19 @@
+{
+  "al.enableCodeActions": true,
+  "al.enableCodeAnalysis": true,
+  "al.codeAnalyzers": [
+    "${CodeCop}",
+    "${PerTenantExtensionCop}",
+    "${UICop}"
+  ],
+  "al.backgroundCodeAnalysis": true,
+  "al.incrementalBuild": true,
+  "files.exclude": {
+    "**/.git": true,
+    "**/.alpackages": true,
+    "**/.vscode": false
+  },
+  "editor.formatOnSave": true,
+  "editor.tabSize": 4,
+  "editor.insertSpaces": true
+}

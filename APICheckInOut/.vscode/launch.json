@@ -1,0 +1,18 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+
+    {
+      "type": "al",
+      "request": "launch",
+      "name": "LoyaltyIntegrationDev",
+      "environmentType": "Sandbox",
+      "environmentName": "LoyaltyIntegrationDev",
+      "serverInstance": "LoyaltyIntegrationDev",
+      "schemaUpdateMode": "ForceSync",
+      "tenant": "be3fcc1f-2132-4821-95eb-5d33593096bf",
+      "breakOnError": "All",
+      "breakOnRecordWrite": false
+    }
+  ]
+}

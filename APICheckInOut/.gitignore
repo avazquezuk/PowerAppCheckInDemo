@@ -1,0 +1,29 @@
+# .gitignore for AL extension
+
+# AL Packages
+.alpackages/
+*.app
+
+# Build output
+rad.json
+.snapshots/
+
+# VS Code
+.vscode/*.log
+
+# AL Test results
+testResults.xml
+
+# Symbols
+*.bcsymbolreference.json
+
+# Temp files
+*.tmp
+*.temp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# User-specific files
+*.user
