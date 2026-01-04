@@ -3,7 +3,7 @@ import { HashRouter, Routes, Route } from 'react-router-dom';
 import { Dashboard } from './components';
 import { HistoryPage, RecentActivityPage } from './components/history';
 import { EmployeeProfile } from './components/employee';
-import { ServiceProvider } from './context';
+import { ServiceProvider, UserProvider } from './context';
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -65,16 +65,18 @@ class ErrorBoundary extends React.Component<
 function App() {
   return (
     <ErrorBoundary>
-      <ServiceProvider>
-        <HashRouter>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/recent" element={<RecentActivityPage />} />
-            <Route path="/history" element={<HistoryPage />} />
-            <Route path="/profile" element={<EmployeeProfile />} />
-          </Routes>
-        </HashRouter>
-      </ServiceProvider>
+      <UserProvider>
+        <ServiceProvider>
+          <HashRouter>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/recent" element={<RecentActivityPage />} />
+              <Route path="/history" element={<HistoryPage />} />
+              <Route path="/profile" element={<EmployeeProfile />} />
+            </Routes>
+          </HashRouter>
+        </ServiceProvider>
+      </UserProvider>
     </ErrorBoundary>
   );
 }

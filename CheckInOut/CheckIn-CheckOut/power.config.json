@@ -12,6 +12,10 @@
     "BusinessCentral": {
       "connectionId": "4d350ad4b57943a98ac35a0682a58a01",
       "apiId": "/providers/Microsoft.PowerApps/apis/shared_dynamicssmbsaas"
+    },
+    "Office365Users": {
+      "connectionId": "11c05e32de1c43698d0f5342e60c5d6d",
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365users"
     }
   },
   "databaseReferences": {}

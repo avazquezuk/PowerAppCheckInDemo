@@ -7,3 +7,4 @@ export {
   useCheckInOutService,
   useServiceProvider 
 } from './ServiceContext';
+export { UserProvider, useUser } from './UserContext';

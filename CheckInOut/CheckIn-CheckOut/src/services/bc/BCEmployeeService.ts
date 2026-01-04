@@ -61,10 +61,34 @@ export class BCEmployeeService implements IEmployeeService {
         throw new Error('Current user ID not set');
       }
 
-      return this.getEmployeeById(this.currentUserId).then(r => {
-        if (!r.success) throw new Error(r.error);
-        return r.data;
-      });
+      // Try to find employee by email first, then by retail user ID
+      const emailFilter = new ODataFilterBuilder()
+        .equals('email', this.currentUserId)
+        .build();
+
+      let url = buildBCUrl(bcEndpoints.employees, { '$filter': emailFilter });
+      
+      let result = await withRetry(() => 
+        this.fetchFromBC<BCApiResponse<BCEmployee>>(url)
+      );
+
+      // If not found by email, try by retail user ID
+      if (result.value.length === 0) {
+        const userIdFilter = new ODataFilterBuilder()
+          .equals('retailUserId', this.currentUserId)
+          .build();
+
+        url = buildBCUrl(bcEndpoints.employees, { '$filter': userIdFilter });
+        result = await withRetry(() => 
+          this.fetchFromBC<BCApiResponse<BCEmployee>>(url)
+        );
+      }
+
+      if (result.value.length === 0) {
+        throw new Error('Employee not found for current user');
+      }
+
+      return transformBCEmployee(result.value[0]);
     }, null as unknown as Employee);
   }
 

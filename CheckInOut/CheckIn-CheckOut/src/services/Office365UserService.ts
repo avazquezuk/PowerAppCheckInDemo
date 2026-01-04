@@ -1,7 +1,9 @@
 // Office 365 User Service
-// Note: For Power Apps Code Apps, you need to:
-// 1. Create an Office 365 Users connection in Power Apps portal
-// 2. Add it to your app via the Data panel in Power Apps Studio
+// Note: For Power Apps Code Apps, Office 365 Users connector cannot be accessed directly from code.
+// Power Apps Code Apps don't expose connector APIs to JavaScript - connectors are only accessible
+// through Power Fx in the Power Apps Studio environment.
+// 
+// For user identification, we'll rely on the Business Central employee lookup by email.
 
 export interface Office365UserProfile {
   id: string;
@@ -33,22 +35,15 @@ class Office365UserService {
   };
 
   async getMyProfile(): Promise<Office365UserProfile> {
-    // For Code Apps, connectors need to be added through Power Apps Studio
-    // This is a placeholder that uses mock data until the connector is properly configured
-    // Once configured, you can access it via the Power Apps runtime environment
-    
-    return new Promise((resolve) => {
-      setTimeout(() => resolve(this.mockProfile), 500);
-    });
+    // Power Apps Code Apps don't expose connector APIs to JavaScript
+    // Return mock data for development
+    // In production, user identification happens through BC employee lookup
+    return this.mockProfile;
   }
 
   async getUserPhoto(): Promise<string> {
-    // For Code Apps, connectors need to be added through Power Apps Studio
-    // This is a placeholder that returns empty string (will show initials)
-    
-    return new Promise((resolve) => {
-      setTimeout(() => resolve(''), 500);
-    });
+    // Power Apps Code Apps don't expose connector APIs to JavaScript
+    return '';
   }
 
   async getPhotoUrl(): Promise<string | null> {

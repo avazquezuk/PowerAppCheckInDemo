@@ -26,11 +26,19 @@ export interface ServiceFactoryConfig {
  */
 function getDefaultProvider(): ServiceProvider {
   const envProvider = import.meta.env.VITE_SERVICE_PROVIDER;
+  
+  // IMPORTANT: Power Apps Code Apps cannot access Business Central connector APIs from JavaScript
+  // Connectors are only accessible through Power Fx in Power Apps Studio, not from code
+  // Therefore, we always use 'mock' services for now
+  // To use real BC data, you would need to build a custom API layer or use Power Fx
+  
   if (envProvider === 'bc') {
-    return 'bc';
+    console.warn('BC provider requested but not supported in Power Apps Code Apps. Using mock data.');
+    return 'mock';
   }
-  // Default to mock in development
-  return import.meta.env.DEV ? 'mock' : 'bc';
+  
+  // Always use mock for both development and production
+  return 'mock';
 }
 
 /**
