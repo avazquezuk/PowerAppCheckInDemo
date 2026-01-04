@@ -1,9 +1,7 @@
 // Office 365 User Service
-// Note: For Power Apps Code Apps, Office 365 Users connector cannot be accessed directly from code.
-// Power Apps Code Apps don't expose connector APIs to JavaScript - connectors are only accessible
-// through Power Fx in the Power Apps Studio environment.
-// 
-// For user identification, we'll rely on the Business Central employee lookup by email.
+// This service provides user profile information
+// In Power Apps, it uses the authenticated Power Apps user context
+// In local development, it uses mock data
 
 export interface Office365UserProfile {
   id: string;
@@ -34,15 +32,90 @@ class Office365UserService {
     mobilePhone: '+1-555-0100',
   };
 
+  private async getPowerAppsUserProfile(): Promise<Office365UserProfile | null> {
+    try {
+      // Try to get user from Power Apps context
+      if (typeof window !== 'undefined') {
+        const powerAppsContext = (window as any).PowerAppsContext;
+        
+        if (powerAppsContext && powerAppsContext.user) {
+          const user = powerAppsContext.user;
+          
+          return {
+            id: user.id || user.userId || 'unknown',
+            displayName: user.displayName || user.fullName || 'Power Apps User',
+            givenName: user.givenName || user.firstName || '',
+            surname: user.surname || user.lastName || '',
+            userPrincipalName: user.userPrincipalName || user.email || '',
+            mail: user.email || user.mail || user.userPrincipalName || '',
+            jobTitle: user.jobTitle || '',
+            department: user.department || '',
+            mobilePhone: user.mobilePhone || user.phone || '',
+          };
+        }
+
+        // Try alternate Power Apps user context location
+        const msalContext = (window as any).msal;
+        if (msalContext && msalContext.currentUser) {
+          const user = msalContext.currentUser;
+          
+          return {
+            id: user.localAccountId || user.homeAccountId || 'unknown',
+            displayName: user.name || 'Power Apps User',
+            givenName: user.givenName || '',
+            surname: user.surname || '',
+            userPrincipalName: user.username || '',
+            mail: user.username || '',
+            jobTitle: '',
+            department: '',
+            mobilePhone: '',
+          };
+        }
+
+        // Try Office context
+        if ((window as any).Office && (window as any).Office.context) {
+          const mailbox = (window as any).Office.context.mailbox;
+          if (mailbox && mailbox.userProfile) {
+            const user = mailbox.userProfile;
+            
+            return {
+              id: user.accountId || 'unknown',
+              displayName: user.displayName || 'Office User',
+              givenName: '',
+              surname: '',
+              userPrincipalName: user.emailAddress || '',
+              mail: user.emailAddress || '',
+              jobTitle: '',
+              department: '',
+              mobilePhone: '',
+            };
+          }
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.warn('Error getting Power Apps user profile:', error);
+      return null;
+    }
+  }
+
   async getMyProfile(): Promise<Office365UserProfile> {
-    // Power Apps Code Apps don't expose connector APIs to JavaScript
-    // Return mock data for development
-    // In production, user identification happens through BC employee lookup
+    // Try to get actual user from Power Apps context
+    const powerAppsProfile = await this.getPowerAppsUserProfile();
+    
+    if (powerAppsProfile) {
+      console.log('Using Power Apps user profile:', powerAppsProfile.displayName);
+      return powerAppsProfile;
+    }
+    
+    // Fall back to mock data for local development
+    console.log('Using mock user profile (development mode)');
     return this.mockProfile;
   }
 
   async getUserPhoto(): Promise<string> {
-    // Power Apps Code Apps don't expose connector APIs to JavaScript
+    // Photo not available through Power Apps context
     return '';
   }
 

@@ -3,7 +3,9 @@ import { HashRouter, Routes, Route } from 'react-router-dom';
 import { Dashboard } from './components';
 import { HistoryPage, RecentActivityPage } from './components/history';
 import { EmployeeProfile } from './components/employee';
+import { LoginScreen } from './components/auth';
 import { ServiceProvider, UserProvider } from './context';
+import { useUser } from './context/UserContext';
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -66,18 +68,30 @@ function App() {
   return (
     <ErrorBoundary>
       <UserProvider>
-        <ServiceProvider>
-          <HashRouter>
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/recent" element={<RecentActivityPage />} />
-              <Route path="/history" element={<HistoryPage />} />
-              <Route path="/profile" element={<EmployeeProfile />} />
-            </Routes>
-          </HashRouter>
-        </ServiceProvider>
+        <AppContent />
       </UserProvider>
     </ErrorBoundary>
+  );
+}
+
+function AppContent() {
+  const { isAuthenticated, login, loading, error } = useUser();
+
+  if (!isAuthenticated) {
+    return <LoginScreen onLogin={login} isLoading={loading} error={error} />;
+  }
+
+  return (
+    <ServiceProvider>
+      <HashRouter>
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/recent" element={<RecentActivityPage />} />
+          <Route path="/history" element={<HistoryPage />} />
+          <Route path="/profile" element={<EmployeeProfile />} />
+        </Routes>
+      </HashRouter>
+    </ServiceProvider>
   );
 }
 

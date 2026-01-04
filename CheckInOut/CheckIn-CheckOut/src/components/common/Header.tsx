@@ -27,6 +27,7 @@ import {
 import { Employee } from '@/types';
 import { getInitials } from '@/utils';
 import { useTheme } from '@/context';
+import { useUser } from '@/context/UserContext';
 
 const getPageInfo = (pathname: string): { name: string; icon: React.ReactNode } => {
   switch (pathname) {
@@ -100,12 +101,17 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ employee }) => {
   const styles = useStyles();
   const { isDark, toggleTheme } = useTheme();
+  const { logout, profile } = useUser();
   const location = useLocation();
   const pageInfo = getPageInfo(location.pathname);
 
-  // Use employee data (will be replaced with Office 365 when connector support is available)
-  const displayName = employee?.name || 'User';
-  const displayTitle = employee?.jobTitle || '';
+  // Use Office 365 profile if available, otherwise fallback to employee data
+  const displayName = profile?.displayName || employee?.name || 'User';
+  const displayTitle = profile?.jobTitle || employee?.jobTitle || '';
+
+  const handleSignOut = () => {
+    logout();
+  };
 
   return (
     <header className={styles.header}>
@@ -154,7 +160,7 @@ const Header: React.FC<HeaderProps> = ({ employee }) => {
                   Settings
                 </MenuItem>
                 <MenuDivider />
-                <MenuItem icon={<SignOutRegular />}>
+                <MenuItem icon={<SignOutRegular />} onClick={handleSignOut}>
                   Sign Out
                 </MenuItem>
               </MenuList>
